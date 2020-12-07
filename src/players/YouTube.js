@@ -6,7 +6,8 @@ import { canPlay, MATCH_URL_YOUTUBE } from '../patterns'
 const SDK_URL = 'https://www.youtube.com/iframe_api'
 const SDK_GLOBAL = 'YT'
 const SDK_GLOBAL_READY = 'onYouTubeIframeAPIReady'
-const MATCH_PLAYLIST = /(?:list|channel)=([a-zA-Z0-9_-]+)/
+const MATCH_PLAYLIST = /(?:list)=([a-zA-Z0-9_-]+)/
+const MATCH_LIVE = /embed\/live_stream/
 const MATCH_USER_UPLOADS = /user\/([a-zA-Z0-9_-]+)\/?/
 const MATCH_NOCOOKIE = /youtube-nocookie\.com/
 const NOCOOKIE_HOST = 'https://www.youtube-nocookie.com'
@@ -30,8 +31,13 @@ export default class YouTube extends Component {
   load (url, isReady) {
     const { playing, muted, playsinline, controls, loop, config, onError } = this.props
     const { playerVars, embedOptions } = config
-    const id = this.getID(url)
+
+    const isLive = MATCH_LIVE.test(url)
+    const id = isLive ? undefined : this.getID(url)
+
     if (isReady) {
+      if (isLive) return
+
       if (MATCH_PLAYLIST.test(url) || MATCH_USER_UPLOADS.test(url) || url instanceof Array) {
         this.player.loadPlaylist(this.parsePlaylist(url))
         return
@@ -186,15 +192,17 @@ export default class YouTube extends Component {
   }
 
   render () {
-    const { display } = this.props
+    const { display, url } = this.props
     const style = {
       width: '100%',
       height: '100%',
       display
     }
+    const iframeProps = MATCH_LIVE.test(url) ? { src: url } : {}
+
     return (
       <div style={style}>
-        <div ref={this.ref} />
+        <iframe ref={this.ref} {...iframeProps} enablejsapi />
       </div>
     )
   }
