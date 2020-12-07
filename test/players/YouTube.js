@@ -24,6 +24,7 @@ global.document = { body: { contains: () => true } }
 configure({ adapter: new Adapter() })
 
 const TEST_URL = 'https://www.youtube.com/watch?v=oUFJJNQGwhk'
+const TEST_LIVE_URL = 'https://www.youtube.com/embed/live_stream?channel=UC6K7yzj2kV3v3sASdaYCY0Q';
 const TEST_CONFIG = {
   playerVars: {},
   embedOptions: {}
@@ -82,6 +83,18 @@ test('load() when ready', t => {
   getSDK.restore()
 })
 
+test('load() when ready on live url', t => {
+  const getSDK = sinon.stub(utils, 'getSDK').resolves()
+  const instance = shallow(
+    <YouTube url={TEST_LIVE_URL} config={TEST_CONFIG} />
+  ).instance()
+  instance.player = { cueVideoById: sinon.fake() }
+  instance.load(TEST_LIVE_URL, true)
+  t.true(instance.player.cueVideoById.notCalled)
+  t.true(getSDK.notCalled)
+  getSDK.restore()
+})
+
 test('onStateChange() - play', t => {
   const called = {}
   const onPlay = () => { called.onPlay = true }
@@ -121,7 +134,17 @@ test('render()', t => {
   const style = { width: '100%', height: '100%', display: undefined }
   t.true(wrapper.contains(
     <div style={style}>
-      <div />
+      <iframe enablejsapi />
+    </div>
+  ))
+})
+
+test('render() on live url', t => {
+  const wrapper = shallow(<YouTube url={TEST_LIVE_URL} />)
+  const style = { width: '100%', height: '100%', display: undefined }
+  t.true(wrapper.contains(
+    <div style={style}>
+      <iframe src={TEST_LIVE_URL} enablejsapi />
     </div>
   ))
 })
